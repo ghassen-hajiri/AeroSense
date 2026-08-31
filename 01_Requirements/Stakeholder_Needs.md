@@ -2,16 +2,16 @@
 
 **Project:** AeroSense – Embedded Condition Monitoring & Sensor Node  
 **Document:** Stakeholder Needs  
-**Version:** 1.0  
-**Status:** Draft
+**Version:** 0.1  
+**Status:** Draft  
 
 ## 1. Purpose
 
-This document defines the stakeholder needs for the AeroSense embedded condition monitoring system.
+This document defines the stakeholder needs for the AeroSense Embedded Condition Monitoring & Sensor Node.
 
-AeroSense is intended as a development and engineering platform for acquiring environmental, mechanical and electrical condition data and providing measurement and diagnostic information to external systems.
+AeroSense is intended as an engineering and development platform for acquiring environmental, mechanical, and electrical condition data and providing measurement and diagnostic information to external systems.
 
-The stakeholder needs defined in this document provide the basis for the derivation of the system requirements.
+The stakeholder needs defined in this document provide the basis for the derivation of verifiable system requirements.
 
 ---
 
@@ -19,12 +19,12 @@ The stakeholder needs defined in this document provide the basis for the derivat
 
 | ID | Stakeholder Need | Rationale |
 |---|---|---|
-| UN-001 | The user needs to monitor environmental conditions. | Temperature and ambient pressure shall be observable. |
-| UN-002 | The user needs to monitor mechanical motion and vibration. | Acceleration and vibration information is required for condition monitoring. |
-| UN-003 | The user needs to monitor the electrical supply condition of the device. | The user shall be able to identify abnormal supply conditions. |
-| UN-004 | The user needs to receive measurement data on an external system. | Measurement data shall be available outside the device. |
-| UN-005 | The user needs to identify the operational status and detected faults of the device. | The user shall be able to determine whether AeroSense is operating correctly. |
-| UN-006 | The user needs to configure the device without opening the enclosure. | Configuration shall be possible while the device is assembled. |
+| UN-001 | The user needs to monitor environmental conditions. | Environmental monitoring requires information about temperature and ambient pressure. |
+| UN-002 | The user needs to monitor mechanical motion and vibration. | Acceleration and vibration information supports condition monitoring. |
+| UN-003 | The user needs to monitor the electrical supply condition of the device. | Supply information enables the user to identify abnormal operating conditions. |
+| UN-004 | The user needs to receive measurement data on an external system. | Measurement data needs to be available for external monitoring and processing. |
+| UN-005 | The user needs to identify the operational status and detected faults of the device. | Status and diagnostic information enables the user to determine whether AeroSense is operating correctly. |
+| UN-006 | The user needs to configure the device without opening the enclosure. | External configuration improves usability and avoids unnecessary disassembly. |
 
 ---
 
@@ -32,11 +32,11 @@ The stakeholder needs defined in this document provide the basis for the derivat
 
 | ID | Stakeholder Need | Rationale |
 |---|---|---|
-| SI-001 | The system integrator needs a standardized communication interface for exchanging measurement and diagnostic data. | AeroSense must be capable of integration with external systems. |
-| SI-002 | The system integrator needs clearly defined communication messages and data formats. | External systems must be able to interpret AeroSense data correctly. |
-| SI-003 | The system integrator needs clearly defined electrical and physical interfaces. | Power and communication interfaces must be unambiguous. |
-| SI-004 | The system integrator needs predictable and periodic transmission of measurement data. | External systems require predictable data availability. |
-| SI-005 | The system integrator needs to determine whether received measurement data is valid. | Invalid or faulty sensor data must be identifiable. |
+| SI-001 | The system integrator needs a standardized communication interface for exchanging measurement and diagnostic data. | A standardized interface enables integration of AeroSense with external systems. |
+| SI-002 | The system integrator needs clearly defined communication messages and data formats. | Defined messages and data formats enable external systems to interpret AeroSense data correctly. |
+| SI-003 | The system integrator needs clearly defined electrical and physical interfaces. | Defined interfaces reduce ambiguity during system integration. |
+| SI-004 | The system integrator needs predictable and periodic availability of measurement data. | Predictable data availability supports reliable integration with external systems. |
+| SI-005 | The system integrator needs to determine whether received measurement data is valid. | Data validity information prevents invalid measurements from being interpreted as valid system data. |
 
 ---
 
@@ -44,11 +44,11 @@ The stakeholder needs defined in this document provide the basis for the derivat
 
 | ID | Stakeholder Need | Rationale |
 |---|---|---|
-| DEV-001 | The developer needs access to the embedded system for programming and debugging. | Firmware development and troubleshooting require access to the embedded controller. |
-| DEV-002 | The developer needs a modular hardware and software architecture. | Individual functions shall be independently developed, modified and tested. |
-| DEV-003 | The developer needs diagnostic information for troubleshooting hardware and software failures. | Failures must be identifiable during development and integration. |
-| DEV-004 | The developer needs the system design to support incremental hardware/software integration. | Components shall be integrated and tested step by step. |
-| DEV-005 | The developer needs traceability between stakeholder needs, system requirements, implementation and verification. | Development decisions and verification evidence shall remain traceable. |
+| DEV-001 | The developer needs access to the embedded system for programming and debugging. | Development access supports firmware implementation, integration, and troubleshooting. |
+| DEV-002 | The developer needs a modular hardware and software architecture. | Modularity supports independent development, modification, and testing of system functions. |
+| DEV-003 | The developer needs diagnostic information for troubleshooting hardware and software failures. | Diagnostic information supports efficient fault identification during development and integration. |
+| DEV-004 | The developer needs the system design to support incremental hardware/software integration. | Incremental integration reduces complexity and supports systematic troubleshooting. |
+| DEV-005 | The developer needs traceability between stakeholder needs, system requirements, implementation, and verification. | Traceability enables development decisions and verification evidence to be followed throughout the development lifecycle. |
 
 ---
 
@@ -56,12 +56,12 @@ The stakeholder needs defined in this document provide the basis for the derivat
 
 | ID | Stakeholder Need | Rationale |
 |---|---|---|
-| TV-001 | The test engineer needs to verify the correct operation of each major system function. | System requirements must be objectively verifiable. |
-| TV-002 | The test engineer needs access to measurement and diagnostic information during testing. | Test results require observable system information. |
-| TV-003 | The test engineer needs to reproduce defined fault conditions. | Fault detection and system reactions must be testable. |
-| TV-004 | The maintenance technician needs to identify sensor, communication and power-related failures. | Fault localization shall be possible without extensive disassembly. |
-| TV-005 | The maintenance technician needs to determine the firmware and hardware configuration of the device. | Hardware and software versions must be traceable. |
-| TV-006 | The test engineer needs repeatable test procedures and documented acceptance criteria. | Verification results shall be reproducible and objectively evaluated. |
+| TV-001 | The test engineer needs to verify the correct operation of each major system function. | Verification provides objective evidence that the implemented system satisfies its requirements. |
+| TV-002 | The test engineer needs access to measurement and diagnostic information during testing. | Observable system information enables objective evaluation of test results. |
+| TV-003 | The test engineer needs to reproduce defined fault conditions. | Reproducible fault conditions enable verification of fault detection and system reactions. |
+| TV-004 | The maintenance technician needs to identify sensor, communication, and power-related failures. | Fault identification supports efficient troubleshooting and maintenance. |
+| TV-005 | The maintenance technician needs to determine the firmware and hardware configuration of the device. | Configuration identification supports maintenance and traceability. |
+| TV-006 | The test engineer needs repeatable test procedures and documented acceptance criteria. | Repeatable procedures and acceptance criteria enable consistent verification results. |
 
 ---
 
@@ -69,19 +69,21 @@ The stakeholder needs defined in this document provide the basis for the derivat
 
 | ID | Stakeholder Need | Rationale |
 |---|---|---|
-| MFG-001 | The manufacturer needs the device to be reproducibly manufacturable and assemblable. | Multiple devices shall be manufacturable with consistent configuration. |
-| MFG-002 | The manufacturer needs complete manufacturing and assembly documentation. | Production requires clearly defined manufacturing information. |
-| MFG-003 | The manufacturer needs a defined method for programming the firmware during production. | Firmware installation shall be repeatable for every manufactured device. |
-| MFG-004 | The manufacturer needs a method to verify each assembled device before release. | Manufacturing defects shall be detected before the device is released. |
-| MFG-005 | The manufacturer needs each device to be uniquely identifiable. | Individual devices and their configurations shall be traceable. |
-| MFG-006 | The manufacturer needs the electronics to be mechanically protected during normal handling and operation. | The electronic components require protection against normal handling and environmental influences. |
+| MFG-001 | The manufacturer needs the device to be reproducibly manufactured and assembled. | Reproducibility enables multiple devices to be produced with a consistent configuration. |
+| MFG-002 | The manufacturer needs complete manufacturing and assembly documentation. | Defined manufacturing information supports consistent production and assembly. |
+| MFG-003 | The manufacturer needs a defined method for programming the firmware during production. | A defined programming process supports consistent firmware installation. |
+| MFG-004 | The manufacturer needs a method to verify each assembled device before release. | Production verification enables manufacturing defects to be detected before release. |
+| MFG-005 | The manufacturer needs each device to be uniquely identifiable. | Unique identification supports product and configuration traceability. |
+| MFG-006 | The manufacturer needs the electronics to be mechanically protected during normal handling and operation. | Mechanical protection reduces the risk of damage to electronic components. |
 
 ---
 
 ## 7. Traceability
 
-The stakeholder needs defined in this document will be used as the source for the derivation of system requirements.
+The stakeholder needs defined in this document provide the source for the derivation of system requirements.
 
-Traceability will follow the development chain:
+Each system requirement will be linked to one or more stakeholder needs where applicable.
 
-Stakeholder Need → System Requirement → HW/SW Requirement → Design → Implementation → Verification
+The planned traceability chain is:
+
+**Stakeholder Need → System Requirement → Hardware/Software Requirement → Design → Implementation → Verification**

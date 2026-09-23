@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "status_led.h"
+#include "measurement_manager.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -105,23 +106,50 @@ int main(void)
   MX_I2C2_Init();
   MX_SPI1_Init();
   MX_USB_PCD_Init();
-  /* USER CODE BEGIN 2 */
+/* USER CODE BEGIN 2 */
 
-  /* USER CODE END 2 */
+STATUS_LED_Init();
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+STATUS_LED_Init();
+
+STATUS_LED_Init();
+
+MEASUREMENT_MANAGER_Status_t measurement_status;
+
+const MEASUREMENT_MANAGER_Data_t *measurement_data;
+
+measurement_status = MEASUREMENT_MANAGER_Init();
+
+measurement_data = MEASUREMENT_MANAGER_GetData();
+
+/* USER CODE END 2 */
+
+/* Infinite loop */
+/* USER CODE BEGIN WHILE */
 while (1)
 {
-  /* USER CODE END WHILE */
+    measurement_status = MEASUREMENT_MANAGER_Update();
 
-  /* USER CODE BEGIN 3 */
-  HAL_GPIO_TogglePin(STATUS_LED_GPIO_Port, STATUS_LED_Pin);
-  HAL_Delay(500);
+    measurement_data = MEASUREMENT_MANAGER_GetData();
+
+    if (measurement_status == MEASUREMENT_MANAGER_OK)
+    {
+        STATUS_LED_On();
+    }
+    else
+    {
+        STATUS_LED_Toggle();
+    }
+
+    HAL_Delay(500);
+
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 }
 /* USER CODE END 3 */
-}
 
+}
 /**
   * @brief System Clock Configuration
   * @retval None

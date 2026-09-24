@@ -23,6 +23,9 @@
 /* USER CODE BEGIN Includes */
 #include "status_led.h"
 #include "measurement_manager.h"
+#include "can_message_manager.h"
+#include "diagnostic_manager.h"
+#include "system_manager.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,6 +55,10 @@ SPI_HandleTypeDef hspi1;
 PCD_HandleTypeDef hpcd_USB_FS;
 
 /* USER CODE BEGIN PV */
+
+MEASUREMENT_MANAGER_Status_t measurement_status;
+CANMSG_Status_t canmsg_status;
+SYSTEM_MANAGER_Status_t system_status;
 
 /* USER CODE END PV */
 
@@ -110,17 +117,15 @@ int main(void)
 
 STATUS_LED_Init();
 
-STATUS_LED_Init();
-
-STATUS_LED_Init();
-
-MEASUREMENT_MANAGER_Status_t measurement_status;
-
-const MEASUREMENT_MANAGER_Data_t *measurement_data;
+DIAGNOSTIC_Init();
 
 measurement_status = MEASUREMENT_MANAGER_Init();
 
-measurement_data = MEASUREMENT_MANAGER_GetData();
+canmsg_status = CANMSG_Init();
+
+system_status = SYSTEM_MANAGER_Init();
+
+
 
 /* USER CODE END 2 */
 
@@ -130,23 +135,59 @@ while (1)
 {
     measurement_status = MEASUREMENT_MANAGER_Update();
 
-    measurement_data = MEASUREMENT_MANAGER_GetData();
+    system_status = SYSTEM_MANAGER_Update();
 
-    if (measurement_status == MEASUREMENT_MANAGER_OK)
+
+    if (canmsg_status == CANMSG_OK)
     {
-        STATUS_LED_On();
+        CANMSG_TransmitEnvironment();
+        CANMSG_TransmitAcceleration();
+        CANMSG_TransmitPower();
+        CANMSG_TransmitStatus();
     }
-    else
+
+
+    switch (SYSTEM_MANAGER_GetState())
     {
-        STATUS_LED_Toggle();
+        case SYSTEM_STATE_NORMAL_OPERATION:
+
+            STATUS_LED_On();
+
+            break;
+
+
+        case SYSTEM_STATE_DEGRADED_OPERATION:
+
+            STATUS_LED_Toggle();
+
+            break;
+
+
+        case SYSTEM_STATE_FAULT:
+
+            STATUS_LED_Off();
+
+            break;
+
+
+        case SYSTEM_STATE_INITIALIZATION:
+
+        case SYSTEM_STATE_SELF_TEST:
+
+        default:
+
+            STATUS_LED_Toggle();
+
+            break;
     }
+
 
     HAL_Delay(500);
 
     /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
 }
+
+    
 /* USER CODE END 3 */
 
 }

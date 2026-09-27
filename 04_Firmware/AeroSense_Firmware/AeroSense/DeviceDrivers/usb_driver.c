@@ -1,11 +1,15 @@
 #include "usb_driver.h"
 
 #include "usbd_cdc_if.h"
+#include "diagnostic_manager.h"
+
 #include <string.h>
+
 
 static uint8_t usb_rx_buffer[USB_DRIVER_RX_BUFFER_SIZE];
 static volatile uint16_t usb_rx_length = 0U;
 static volatile uint8_t usb_data_available = 0U;
+
 
 USB_DRIVER_Status_t USB_DRIVER_Init(void)
 {
@@ -14,6 +18,7 @@ USB_DRIVER_Status_t USB_DRIVER_Init(void)
 
     return USB_DRIVER_OK;
 }
+
 
 USB_DRIVER_Status_t USB_DRIVER_Transmit(
     const uint8_t *data,
@@ -26,10 +31,15 @@ USB_DRIVER_Status_t USB_DRIVER_Transmit(
         return USB_DRIVER_INVALID_ARG;
     }
 
-    usb_status = CDC_Transmit_FS((uint8_t *)data, length);
+    usb_status = CDC_Transmit_FS(
+        (uint8_t *)data,
+        length);
 
     if (usb_status == USBD_OK)
     {
+        DIAGNOSTIC_ClearFault(
+            DIAGNOSTIC_FAULT_USB);
+
         return USB_DRIVER_OK;
     }
 
@@ -38,8 +48,13 @@ USB_DRIVER_Status_t USB_DRIVER_Transmit(
         return USB_DRIVER_BUSY;
     }
 
+    DIAGNOSTIC_SetFault(
+        DIAGNOSTIC_FAULT_USB,
+        DIAGNOSTIC_SEVERITY_INFO);
+
     return USB_DRIVER_ERROR;
 }
+
 
 void USB_DRIVER_ReceiveCallback(
     const uint8_t *data,
@@ -59,16 +74,21 @@ void USB_DRIVER_ReceiveCallback(
         copy_length = USB_DRIVER_RX_BUFFER_SIZE;
     }
 
-    memcpy(usb_rx_buffer, data, copy_length);
+    memcpy(
+        usb_rx_buffer,
+        data,
+        copy_length);
 
     usb_rx_length = (uint16_t)copy_length;
     usb_data_available = 1U;
 }
 
+
 uint8_t USB_DRIVER_IsDataAvailable(void)
 {
     return usb_data_available;
 }
+
 
 uint16_t USB_DRIVER_Read(
     uint8_t *data,
@@ -93,7 +113,10 @@ uint16_t USB_DRIVER_Read(
         copy_length = max_length;
     }
 
-    memcpy(data, usb_rx_buffer, copy_length);
+    memcpy(
+        data,
+        usb_rx_buffer,
+        copy_length);
 
     usb_rx_length = 0U;
     usb_data_available = 0U;

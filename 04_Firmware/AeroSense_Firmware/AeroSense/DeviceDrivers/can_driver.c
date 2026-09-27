@@ -36,7 +36,6 @@ CAN_DRIVER_Status_t CAN_DRIVER_Transmit(
     }
 
 tx_header.Identifier = message->id;
-tx_header.Identifier = message->id;
 tx_header.IdType = FDCAN_STANDARD_ID;
 tx_header.TxFrameType = FDCAN_DATA_FRAME;
 tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;

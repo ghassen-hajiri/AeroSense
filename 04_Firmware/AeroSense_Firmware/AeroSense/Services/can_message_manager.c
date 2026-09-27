@@ -10,46 +10,50 @@
 
 
 /* CAN message identifiers */
-#define CANMSG_ID_ENVIRONMENT        0x100U
-#define CANMSG_ID_ACCELERATION       0x101U
-#define CANMSG_ID_POWER              0x102U
+#define CANMSG_ID_ENVIRONMENT         0x100U
+#define CANMSG_ID_ACCELERATION        0x101U
+#define CANMSG_ID_POWER               0x102U
+#define CANMSG_ID_SYSTEM_STATUS       0x103U
 
 
 /* CAN payload lengths */
-#define CANMSG_ENV_LENGTH            8U
-#define CANMSG_ACCEL_LENGTH          8U
-#define CANMSG_POWER_LENGTH          8U
+#define CANMSG_ENV_LENGTH             8U
+#define CANMSG_ACCEL_LENGTH           8U
+#define CANMSG_POWER_LENGTH           8U
+#define CANMSG_STATUS_LENGTH          8U
 
 
 /* Physical value scaling */
-#define CANMSG_TEMP_SCALE            100.0f
-#define CANMSG_PRESSURE_SCALE        100.0f
-#define CANMSG_ACCEL_SCALE           1000.0f
-#define CANMSG_VIN_SCALE             1000.0f
+#define CANMSG_TEMP_SCALE             100.0f
+#define CANMSG_PRESSURE_SCALE         100.0f
+#define CANMSG_ACCEL_SCALE            1000.0f
+#define CANMSG_VIN_SCALE              1000.0f
 
 
 /* Environment validity flags */
-#define CANMSG_VALID_TEMPERATURE     (1U << 0)
-#define CANMSG_VALID_PRESSURE        (1U << 1)
+#define CANMSG_VALID_TEMPERATURE      (1U << 0)
+#define CANMSG_VALID_PRESSURE         (1U << 1)
 
 /* Acceleration validity flags */
-#define CANMSG_VALID_ACCELERATION    (1U << 0)
+#define CANMSG_VALID_ACCELERATION     (1U << 0)
 
 /* Power validity flags */
-#define CANMSG_VALID_VIN             (1U << 0)
-
-/* System Status*/
-
-#define CANMSG_ID_SYSTEM_STATUS       0x103U
-#define CANMSG_STATUS_LENGTH          8U
+#define CANMSG_VALID_VIN              (1U << 0)
 
 
 CANMSG_Status_t CANMSG_Init(void)
 {
     if (CAN_DRIVER_Init() != CAN_DRIVER_OK)
     {
+        DIAGNOSTIC_SetFault(
+            DIAGNOSTIC_FAULT_CAN,
+            DIAGNOSTIC_SEVERITY_DEGRADED);
+
         return CANMSG_ERROR;
     }
+
+    DIAGNOSTIC_ClearFault(
+        DIAGNOSTIC_FAULT_CAN);
 
     return CANMSG_OK;
 }
@@ -71,6 +75,7 @@ CANMSG_Status_t CANMSG_TransmitEnvironment(void)
         return CANMSG_INVALID_ARG;
     }
 
+
     /*
      * Temperature:
      * Physical unit: degC
@@ -78,6 +83,7 @@ CANMSG_Status_t CANMSG_TransmitEnvironment(void)
      */
     temperature_raw =
         (int16_t)(data->temperature_c * CANMSG_TEMP_SCALE);
+
 
     /*
      * Pressure:
@@ -104,41 +110,35 @@ CANMSG_Status_t CANMSG_TransmitEnvironment(void)
 
 
     /*
-     * Byte 0-1:
-     * Temperature
-     * int16
-     * Little-endian
+     * Bytes 0-1:
+     * Temperature, int16, little-endian
      */
     message.data[0] =
         (uint8_t)((uint16_t)temperature_raw & 0xFFU);
 
     message.data[1] =
-        (uint8_t)(((uint16_t)temperature_raw >> 8) & 0xFFU);
+        (uint8_t)(((uint16_t)temperature_raw >> 8U) & 0xFFU);
 
 
     /*
-     * Byte 2-5:
-     * Pressure
-     * uint32
-     * Little-endian
+     * Bytes 2-5:
+     * Pressure, uint32, little-endian
      */
     message.data[2] =
         (uint8_t)(pressure_raw & 0xFFU);
 
     message.data[3] =
-        (uint8_t)((pressure_raw >> 8) & 0xFFU);
+        (uint8_t)((pressure_raw >> 8U) & 0xFFU);
 
     message.data[4] =
-        (uint8_t)((pressure_raw >> 16) & 0xFFU);
+        (uint8_t)((pressure_raw >> 16U) & 0xFFU);
 
     message.data[5] =
-        (uint8_t)((pressure_raw >> 24) & 0xFFU);
+        (uint8_t)((pressure_raw >> 24U) & 0xFFU);
 
 
     /*
      * Byte 6:
-     * Validity flags
-     *
      * Bit 0 = Temperature valid
      * Bit 1 = Pressure valid
      */
@@ -154,8 +154,15 @@ CANMSG_Status_t CANMSG_TransmitEnvironment(void)
 
     if (CAN_DRIVER_Transmit(&message) != CAN_DRIVER_OK)
     {
+        DIAGNOSTIC_SetFault(
+            DIAGNOSTIC_FAULT_CAN,
+            DIAGNOSTIC_SEVERITY_DEGRADED);
+
         return CANMSG_ERROR;
     }
+
+    DIAGNOSTIC_ClearFault(
+        DIAGNOSTIC_FAULT_CAN);
 
     return CANMSG_OK;
 }
@@ -205,48 +212,40 @@ CANMSG_Status_t CANMSG_TransmitAcceleration(void)
 
 
     /*
-     * Byte 0-1:
-     * Acceleration X
-     * int16
-     * Little-endian
+     * Bytes 0-1:
+     * Acceleration X, int16, little-endian
      */
     message.data[0] =
         (uint8_t)((uint16_t)acceleration_x_raw & 0xFFU);
 
     message.data[1] =
-        (uint8_t)(((uint16_t)acceleration_x_raw >> 8) & 0xFFU);
+        (uint8_t)(((uint16_t)acceleration_x_raw >> 8U) & 0xFFU);
 
 
     /*
-     * Byte 2-3:
-     * Acceleration Y
-     * int16
-     * Little-endian
+     * Bytes 2-3:
+     * Acceleration Y, int16, little-endian
      */
     message.data[2] =
         (uint8_t)((uint16_t)acceleration_y_raw & 0xFFU);
 
     message.data[3] =
-        (uint8_t)(((uint16_t)acceleration_y_raw >> 8) & 0xFFU);
+        (uint8_t)(((uint16_t)acceleration_y_raw >> 8U) & 0xFFU);
 
 
     /*
-     * Byte 4-5:
-     * Acceleration Z
-     * int16
-     * Little-endian
+     * Bytes 4-5:
+     * Acceleration Z, int16, little-endian
      */
     message.data[4] =
         (uint8_t)((uint16_t)acceleration_z_raw & 0xFFU);
 
     message.data[5] =
-        (uint8_t)(((uint16_t)acceleration_z_raw >> 8) & 0xFFU);
+        (uint8_t)(((uint16_t)acceleration_z_raw >> 8U) & 0xFFU);
 
 
     /*
      * Byte 6:
-     * Validity flags
-     *
      * Bit 0 = Acceleration valid
      */
     message.data[6] = validity;
@@ -261,12 +260,18 @@ CANMSG_Status_t CANMSG_TransmitAcceleration(void)
 
     if (CAN_DRIVER_Transmit(&message) != CAN_DRIVER_OK)
     {
+        DIAGNOSTIC_SetFault(
+            DIAGNOSTIC_FAULT_CAN,
+            DIAGNOSTIC_SEVERITY_DEGRADED);
+
         return CANMSG_ERROR;
     }
 
+    DIAGNOSTIC_ClearFault(
+        DIAGNOSTIC_FAULT_CAN);
+
     return CANMSG_OK;
 }
-
 
 CANMSG_Status_t CANMSG_TransmitPower(void)
 {
@@ -283,7 +288,6 @@ CANMSG_Status_t CANMSG_TransmitPower(void)
         return CANMSG_INVALID_ARG;
     }
 
-
     /*
      * Input voltage:
      * Physical unit: V
@@ -292,41 +296,32 @@ CANMSG_Status_t CANMSG_TransmitPower(void)
     vin_raw =
         (uint16_t)(data->vin_voltage * CANMSG_VIN_SCALE);
 
-
     if (data->vin_valid != 0U)
     {
         validity |= CANMSG_VALID_VIN;
     }
 
-
     message.id = CANMSG_ID_POWER;
     message.length = CANMSG_POWER_LENGTH;
 
-
     /*
-     * Byte 0-1:
-     * VIN
-     * uint16
-     * Little-endian
+     * Bytes 0-1:
+     * VIN, uint16, little-endian
      */
     message.data[0] =
         (uint8_t)(vin_raw & 0xFFU);
 
     message.data[1] =
-        (uint8_t)((vin_raw >> 8) & 0xFFU);
-
+        (uint8_t)((vin_raw >> 8U) & 0xFFU);
 
     /*
      * Byte 2:
-     * Validity flags
-     *
      * Bit 0 = VIN valid
      */
     message.data[2] = validity;
 
-
     /*
-     * Byte 3-7:
+     * Bytes 3-7:
      * Reserved
      */
     message.data[3] = 0U;
@@ -335,11 +330,17 @@ CANMSG_Status_t CANMSG_TransmitPower(void)
     message.data[6] = 0U;
     message.data[7] = 0U;
 
-
     if (CAN_DRIVER_Transmit(&message) != CAN_DRIVER_OK)
     {
+        DIAGNOSTIC_SetFault(
+            DIAGNOSTIC_FAULT_CAN,
+            DIAGNOSTIC_SEVERITY_DEGRADED);
+
         return CANMSG_ERROR;
     }
+
+    DIAGNOSTIC_ClearFault(
+        DIAGNOSTIC_FAULT_CAN);
 
     return CANMSG_OK;
 }
@@ -347,13 +348,12 @@ CANMSG_Status_t CANMSG_TransmitPower(void)
 
 CANMSG_Status_t CANMSG_TransmitStatus(void)
 {
-    CAN_DRIVER_Message_t message;
+    CAN_DRIVER_Message_t message = {0};
 
     SYSTEM_MANAGER_State_t system_state;
     DIAGNOSTIC_Severity_t highest_severity;
     DIAGNOSTIC_FaultId_t primary_fault;
     uint16_t active_fault_count;
-
 
     system_state =
         SYSTEM_MANAGER_GetState();
@@ -367,10 +367,8 @@ CANMSG_Status_t CANMSG_TransmitStatus(void)
     active_fault_count =
         DIAGNOSTIC_GetActiveFaultCount();
 
-
     message.id = CANMSG_ID_SYSTEM_STATUS;
     message.length = CANMSG_STATUS_LENGTH;
-
 
     /*
      * Byte 0:
@@ -378,13 +376,11 @@ CANMSG_Status_t CANMSG_TransmitStatus(void)
      */
     message.data[0] = (uint8_t)system_state;
 
-
     /*
      * Byte 1:
      * Highest active diagnostic severity
      */
     message.data[1] = (uint8_t)highest_severity;
-
 
     /*
      * Bytes 2-3:
@@ -396,7 +392,6 @@ CANMSG_Status_t CANMSG_TransmitStatus(void)
     message.data[3] =
         (uint8_t)(((uint16_t)primary_fault >> 8U) & 0xFFU);
 
-
     /*
      * Bytes 4-5:
      * Number of active faults, little-endian
@@ -407,14 +402,12 @@ CANMSG_Status_t CANMSG_TransmitStatus(void)
     message.data[5] =
         (uint8_t)((active_fault_count >> 8U) & 0xFFU);
 
-
     /*
      * Bytes 6-7:
-     * Reserved for future use
+     * Reserved
      */
     message.data[6] = 0U;
     message.data[7] = 0U;
-
 
     if (CAN_DRIVER_Transmit(&message) != CAN_DRIVER_OK)
     {
@@ -425,10 +418,8 @@ CANMSG_Status_t CANMSG_TransmitStatus(void)
         return CANMSG_ERROR;
     }
 
-
     DIAGNOSTIC_ClearFault(
         DIAGNOSTIC_FAULT_CAN);
-
 
     return CANMSG_OK;
 }

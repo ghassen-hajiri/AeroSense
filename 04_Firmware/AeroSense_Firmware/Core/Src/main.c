@@ -108,6 +108,13 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
+  if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST) != RESET)
+{
+    watchdog_reset_detected = 1U;
+}
+
+  __HAL_RCC_CLEAR_RESET_FLAGS();
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -205,7 +212,7 @@ while (1)
     {
 
         CONFIGURATION_MANAGER_Update();
-        
+
         measurement_status =
             MEASUREMENT_MANAGER_UpdateTemperature();
 

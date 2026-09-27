@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -26,6 +27,10 @@
 #include "can_message_manager.h"
 #include "diagnostic_manager.h"
 #include "system_manager.h"
+#include "scheduler.h"
+#include "execution_supervision.h"
+#include "configuration_manager.h"
+#include "usb_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,15 +55,21 @@ FDCAN_HandleTypeDef hfdcan1;
 
 I2C_HandleTypeDef hi2c2;
 
-SPI_HandleTypeDef hspi1;
+IWDG_HandleTypeDef hiwdg;
 
-PCD_HandleTypeDef hpcd_USB_FS;
+SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 
 MEASUREMENT_MANAGER_Status_t measurement_status;
 CANMSG_Status_t canmsg_status;
 SYSTEM_MANAGER_Status_t system_status;
+
+const SCHEDULER_Tasks_t *scheduler_tasks;
+
+uint32_t now_ms;
+uint32_t last_led_toggle_ms;
+static uint8_t watchdog_reset_detected = 0U;
 
 /* USER CODE END PV */
 
@@ -69,7 +80,7 @@ static void MX_ADC1_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_SPI1_Init(void);
-static void MX_USB_PCD_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -112,12 +123,20 @@ int main(void)
   MX_FDCAN1_Init();
   MX_I2C2_Init();
   MX_SPI1_Init();
-  MX_USB_PCD_Init();
-/* USER CODE BEGIN 2 */
+  MX_IWDG_Init();
+  MX_USB_Device_Init();
+  /* USER CODE BEGIN 2 */
 
 STATUS_LED_Init();
 
 DIAGNOSTIC_Init();
+
+if (watchdog_reset_detected != 0U)
+{
+    DIAGNOSTIC_SetFault(
+        DIAGNOSTIC_FAULT_WATCHDOG_RESET,
+        DIAGNOSTIC_SEVERITY_INFO);
+}
 
 measurement_status = MEASUREMENT_MANAGER_Init();
 
@@ -125,72 +144,182 @@ canmsg_status = CANMSG_Init();
 
 system_status = SYSTEM_MANAGER_Init();
 
+now_ms = HAL_GetTick();
+
+USB_DRIVER_Init();
+CONFIGURATION_MANAGER_Init();
+
+SCHEDULER_Init(now_ms);
+
+scheduler_tasks = SCHEDULER_GetTasks();
+
+last_led_toggle_ms = now_ms;
+
+EXECUTION_SUPERVISION_Init(now_ms);
 
 
-/* USER CODE END 2 */
+  /* USER CODE END 2 */
 
-/* Infinite loop */
-/* USER CODE BEGIN WHILE */
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
 while (1)
 {
-    measurement_status = MEASUREMENT_MANAGER_Update();
+    now_ms = HAL_GetTick();
 
-    system_status = SYSTEM_MANAGER_Update();
+    SCHEDULER_Update(now_ms);
+    scheduler_tasks = SCHEDULER_GetTasks();
 
 
+    /*
+     * 10 ms task category
+     */
+    if (scheduler_tasks->task_10ms_due != 0U)
+    {
+        system_status = SYSTEM_MANAGER_Update();
+
+        EXECUTION_SUPERVISION_Report10msTask();
+    }
+
+
+    /*
+     * 20 ms task category
+     */
+    if (scheduler_tasks->task_20ms_due != 0U)
+    {
+        measurement_status =
+            MEASUREMENT_MANAGER_UpdateAcceleration();
+
+        if (canmsg_status == CANMSG_OK)
+        {
+            CANMSG_TransmitAcceleration();
+        }
+
+        EXECUTION_SUPERVISION_Report20msTask();
+    }
+
+
+    /*
+     * 100 ms task category
+     */
+    if (scheduler_tasks->task_100ms_due != 0U)
+    {
+
+        CONFIGURATION_MANAGER_Update();
+        
+        measurement_status =
+            MEASUREMENT_MANAGER_UpdateTemperature();
+
+        measurement_status =
+            MEASUREMENT_MANAGER_UpdatePressure();
+
+        measurement_status =
+            MEASUREMENT_MANAGER_UpdateVIN();
+
+
+        if (canmsg_status == CANMSG_OK)
+        {
+            CANMSG_TransmitEnvironment();
+            CANMSG_TransmitPower();
+        }
+
+
+        switch (SYSTEM_MANAGER_GetState())
+        {
+            case SYSTEM_STATE_INITIALIZATION:
+
+                STATUS_LED_Off();
+                break;
+
+
+            case SYSTEM_STATE_SELF_TEST:
+
+                if ((uint32_t)(now_ms - last_led_toggle_ms) >= 500U)
+                {
+                    last_led_toggle_ms = now_ms;
+                    STATUS_LED_Toggle();
+                }
+
+                break;
+
+
+            case SYSTEM_STATE_NORMAL_OPERATION:
+
+                STATUS_LED_On();
+                break;
+
+
+            case SYSTEM_STATE_DEGRADED_OPERATION:
+
+                if ((uint32_t)(now_ms - last_led_toggle_ms) >= 500U)
+                {
+                    last_led_toggle_ms = now_ms;
+                    STATUS_LED_Toggle();
+                }
+
+                break;
+
+
+            case SYSTEM_STATE_FAULT:
+
+                if ((uint32_t)(now_ms - last_led_toggle_ms) >= 100U)
+                {
+                    last_led_toggle_ms = now_ms;
+                    STATUS_LED_Toggle();
+                }
+
+                break;
+
+
+            default:
+
+                STATUS_LED_Off();
+                break;
+        }
+
+
+        EXECUTION_SUPERVISION_Report100msTask();
+    }
+
+
+    /*
+     * 1000 ms task category
+     */
+    if (scheduler_tasks->task_1000ms_due != 0U)
+{
+    /*
+     * Attempt recovery of failed measurement channels.
+     */
+    measurement_status =
+        MEASUREMENT_MANAGER_ProcessRecovery();
+
+
+    /*
+     * Transmit system status.
+     */
     if (canmsg_status == CANMSG_OK)
     {
-        CANMSG_TransmitEnvironment();
-        CANMSG_TransmitAcceleration();
-        CANMSG_TransmitPower();
         CANMSG_TransmitStatus();
     }
+}
 
 
-    switch (SYSTEM_MANAGER_GetState())
-    {
-        case SYSTEM_STATE_NORMAL_OPERATION:
+    /*
+     * Execution supervision is evaluated continuously.
+     *
+     * Internally, evaluation occurs once every 500 ms.
+     * The watchdog is refreshed only when all required
+     * cyclic task categories executed successfully.
+     */
+    EXECUTION_SUPERVISION_Update(now_ms);
 
-            STATUS_LED_On();
-
-            break;
-
-
-        case SYSTEM_STATE_DEGRADED_OPERATION:
-
-            STATUS_LED_Toggle();
-
-            break;
-
-
-        case SYSTEM_STATE_FAULT:
-
-            STATUS_LED_Off();
-
-            break;
-
-
-        case SYSTEM_STATE_INITIALIZATION:
-
-        case SYSTEM_STATE_SELF_TEST:
-
-        default:
-
-            STATUS_LED_Toggle();
-
-            break;
-    }
-
-
-    HAL_Delay(500);
 
     /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+  }
+  /* USER CODE END 3 */
 }
 
-    
-/* USER CODE END 3 */
-
-}
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -207,9 +336,11 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48
+                              |RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
@@ -398,6 +529,35 @@ static void MX_I2C2_Init(void)
 }
 
 /**
+  * @brief IWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_IWDG_Init(void)
+{
+
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_32;
+  hiwdg.Init.Window = 4095;
+  hiwdg.Init.Reload = 1999;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
+
+}
+
+/**
   * @brief SPI1 Initialization Function
   * @param None
   * @retval None
@@ -434,39 +594,6 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
-
-}
-
-/**
-  * @brief USB Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USB_PCD_Init(void)
-{
-
-  /* USER CODE BEGIN USB_Init 0 */
-
-  /* USER CODE END USB_Init 0 */
-
-  /* USER CODE BEGIN USB_Init 1 */
-
-  /* USER CODE END USB_Init 1 */
-  hpcd_USB_FS.Instance = USB;
-  hpcd_USB_FS.Init.dev_endpoints = 8;
-  hpcd_USB_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_FS.Init.Sof_enable = DISABLE;
-  hpcd_USB_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_FS.Init.battery_charging_enable = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USB_Init 2 */
-
-  /* USER CODE END USB_Init 2 */
 
 }
 

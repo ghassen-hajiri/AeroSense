@@ -7,11 +7,13 @@
 extern "C" {
 #endif
 
+
 typedef enum
 {
     MEASUREMENT_MANAGER_OK = 0,
     MEASUREMENT_MANAGER_ERROR
 } MEASUREMENT_MANAGER_Status_t;
+
 
 typedef struct
 {
@@ -41,13 +43,42 @@ MEASUREMENT_MANAGER_Status_t MEASUREMENT_MANAGER_Init(void);
 
 
 /**
- * @brief Updates all measurements.
- *
- * Reads temperature, pressure, acceleration and VIN.
- *
- * @return MEASUREMENT_MANAGER_OK if all measurements are valid.
+ * @brief Updates the temperature measurement.
  */
-MEASUREMENT_MANAGER_Status_t MEASUREMENT_MANAGER_Update(void);
+MEASUREMENT_MANAGER_Status_t MEASUREMENT_MANAGER_UpdateTemperature(void);
+
+
+/**
+ * @brief Updates the pressure measurement.
+ */
+MEASUREMENT_MANAGER_Status_t MEASUREMENT_MANAGER_UpdatePressure(void);
+
+
+/**
+ * @brief Updates the acceleration measurement.
+ */
+MEASUREMENT_MANAGER_Status_t MEASUREMENT_MANAGER_UpdateAcceleration(void);
+
+
+/**
+ * @brief Updates the VIN measurement.
+ */
+MEASUREMENT_MANAGER_Status_t MEASUREMENT_MANAGER_UpdateVIN(void);
+
+
+/**
+ * @brief Attempts recovery of measurement channels
+ *        with an active diagnostic fault.
+ *
+ * Recovery reinitializes the affected device.
+ * The diagnostic fault remains active until the
+ * normal three-success confirmation logic clears it.
+ *
+ * @return MEASUREMENT_MANAGER_OK if all required
+ *         recovery attempts were successful.
+ */
+MEASUREMENT_MANAGER_Status_t
+MEASUREMENT_MANAGER_ProcessRecovery(void);
 
 
 /**

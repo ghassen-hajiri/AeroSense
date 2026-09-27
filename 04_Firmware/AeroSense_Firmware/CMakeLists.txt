@@ -52,6 +52,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     AeroSense/Services/diagnostic_manager.c
     AeroSense/Services/can_message_manager.c
     AeroSense/Services/scheduler.c
+    AeroSense/Services/execution_supervision.c
+    AeroSense/Services/configuration_manager.c
 
     # AeroSense Device Drivers
     AeroSense/DeviceDrivers/status_led.c
@@ -61,6 +63,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     AeroSense/DeviceDrivers/vin_monitor.c
     AeroSense/DeviceDrivers/can_driver.c
     AeroSense/DeviceDrivers/watchdog.c
+    AeroSense/DeviceDrivers/usb_driver.c
 )
 
 # Add include paths
